@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { agents } from "@/db/schema";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+import { TRPCError } from "@trpc/server";
 import { agentsInsertSchema } from "./schemas";
 import { z } from "zod";
 import { and, count, desc, eq, getTableColumns, ilike, sql } from "drizzle-orm";
@@ -9,11 +10,28 @@ import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE } from "@
 export const agentsRouter = createTRPCRouter({
   getOne: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ input,ctx }) => {
+      console.log("getOne called with:", { agentId: input.id, userId: ctx.auth.user.id }); //this line is changed 
+      
       const [existingAgent] = await db
-        .select()
+        .select({
+          meetingCount: sql<number>`5`,
+          ...getTableColumns(agents),
+        })
         .from(agents)
-        .where(eq(agents.id, input.id));
+        .where(
+          and(
+            eq(agents.id, input.id),
+            eq(agents.userId, ctx.auth.user.id)
+          )
+        );
+
+      console.log("Query result:", existingAgent);
+
+        if (!existingAgent){
+          console.log("Agent not found for:", { agentId: input.id, userId: ctx.auth.user.id });
+          throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found"});
+        }
 
       return existingAgent; // Return single agent, not array
     }),
