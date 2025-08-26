@@ -117,7 +117,7 @@ export const SignUpView = () => {
                       <FormItem>
                         <FormLabel> Name </FormLabel>
                         <FormControl>
-                          <Input type="text" placeholder="project-AI" {...field} />
+                          <Input type="text"  placeholder="Hire-ai" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -226,7 +226,7 @@ export const SignUpView = () => {
 
           <div className="bg-gradient-to-br from-green-700 to-green-900 relative hidden md:flex flex-col gap-y-4 items-center justify-center h-full min-h-[200px] py-10">
             <img src="/logo.svg" alt="Image" className="h-[92px] w-[92px]" />
-            <p className="text-2xl font-semibold text-white">project-AI</p>
+            <p className="text-2xl font-semibold text-white">Hire-ai</p>
           </div>
         </CardContent>
       </Card>

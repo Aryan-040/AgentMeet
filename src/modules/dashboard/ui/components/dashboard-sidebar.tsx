@@ -23,8 +23,8 @@ import { DashboardUserButton } from "./dashboard-user-button";
 const firstSection = [
   {
     icon: VideoIcon,
-    label: "Meeting",
-    href: "/meeting",
+    label: "Meetings",
+    href: "/meetings",
   },
   {
     icon: BotIcon,
@@ -46,8 +46,8 @@ export const DashboardSidebar = () => {
     <Sidebar>
       <SidebarHeader className="text-sidebar-accent-foreground">
         <Link href="/" className="flex items-center gap-2 px-2 pt-2">
-          <Image src="/logo.svg" height={36} width={36} alt="project-AI" />
-          <p className="text-2xl font-semibold">project-AI</p>
+          <Image src="/logo.svg" height={36} width={36} alt="Hire-ai" />
+          <p className="text-2xl font-semibold">Hire-ai</p>
         </Link>
       </SidebarHeader>
       <div className="px-4 py-2">
