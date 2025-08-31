@@ -6,8 +6,51 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { and, count, desc, eq, getTableColumns, ilike } from "drizzle-orm";
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE } from "@/constants";
+import { meetingsInsertSchema, meetingsUpdatedSchema } from "./schemas";
 
 export const meetingsRouter = createTRPCRouter({
+  update: protectedProcedure
+  .input(meetingsUpdatedSchema)
+  .mutation(async ({ ctx, input}) => {
+    const [updatedMeeting] = await db
+    .update(meetings)
+    .set(input)
+    .where(
+      and(
+        eq(meetings.id, input.id),
+        eq(meetings.userId, ctx.auth.user.id),
+      ),
+    )
+    .returning();
+
+    if (!updatedMeeting) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Meeting not found",
+      });
+    }
+    return updatedMeeting;
+    }),
+  create: protectedProcedure
+    .input(meetingsInsertSchema)
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const [createdMeeting] = await db
+          .insert(meetings)
+          .values({
+            ...input,
+            userId: ctx.auth.user.id,
+          })
+          .returning();
+
+          
+
+        return createdMeeting;
+      } catch (error) {
+          console.error("Database error in meetings.create:", error);
+        throw new Error("Failed to create meeting. Please try again.");
+      }
+    }),
   getOne: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
@@ -49,8 +92,6 @@ export const meetingsRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       try {
         const { search, page, pageSize } = input;
-        
-        throw new TRPCError({ code: "BAD_REQUEST" })
 
         const data = await db
           .select({
