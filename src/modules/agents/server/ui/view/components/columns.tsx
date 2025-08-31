@@ -1,7 +1,7 @@
 "use client"
 
 import { GeneratedAvatarProps } from "@/components/generated-avatar"
-import { AgentGetOne } from "@/modules/agents/types"
+
 import { inferRouterOutputs } from "@trpc/server"
 import type { AppRouter } from "@/trpc/routers/_app"
 
@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
 
-export const columns: ColumnDef<AgentGetMany>[] = [
+export const columns: ColumnDef<AgentGetMany>[]= [
   {
     accessorKey: "name",
     header: "Agent Name",
