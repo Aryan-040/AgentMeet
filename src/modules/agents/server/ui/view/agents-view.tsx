@@ -25,20 +25,31 @@ export const AgentsView = () => {
 
 
     return (
-        <div className="flex-1 pb-4 px-4 md:px-8 flex flex-col gap-y-4">
-           <DataTable data={data.items} 
-           columns={columns}
-                       onRowClick={(row) => router.push(`/agents/${row.id}`)}/>
-           <DataPagination
-            page={filters.page}
-            totalPages={data.totalPages}
-            onPageChange={(page) => setFilters({page})}
-            />
-           {data.items.length === 0 && (
-             <EmptyState
-                title="Create your first agent"
-                description="Create an agent to join in meetings."/>
-           )}
+        <div className="flex-1 px-4 pb-6 md:px-8">
+            <div className="rounded-xl border bg-white shadow-sm">
+                <div className="p-2 md:p-4">
+                    <DataTable
+                        data={data.items}
+                        columns={columns}
+                        onRowClick={(row) => router.push(`/agents/${row.id}`)}
+                    />
+                </div>
+                <div className="border-t p-3 md:p-4">
+                    <DataPagination
+                        page={filters.page}
+                        totalPages={data.totalPages}
+                        onPageChange={(page) => setFilters({ page })}
+                    />
+                </div>
+            </div>
+            {data.items.length === 0 && (
+                <div className="mt-6">
+                    <EmptyState
+                        title="Create your first agent"
+                        description="Create an agent to join in meetings."
+                    />
+                </div>
+            )}
         </div>
     );
 }; 

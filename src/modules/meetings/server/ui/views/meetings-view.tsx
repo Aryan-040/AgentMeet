@@ -19,19 +19,32 @@ export const MeetingsView = () => {
         ...filters,
     }));
 
-    return(
-        <div className="flex-1 pb-4 md:px-8 flex flex-col gap-y-4">
-            <DataTable data={data.items} columns={columns} onRowClick={(row)=>router.push(`/meetings/${row.id}`)}/>
-            <DataPagination
-            page={filters.page}
-            totalPages={data.totalPages}
-            onPageChange={(page) => setFilters({page})}
-            />
+    return (
+        <div className="flex-1 px-4 pb-6 md:px-8">
+            <div className="rounded-xl border bg-white shadow-sm">
+                <div className="p-2 md:p-4">
+                    <DataTable
+                        data={data.items}
+                        columns={columns}
+                        onRowClick={(row) => router.push(`/meetings/${row.id}`)}
+                    />
+                </div>
+                <div className="border-t p-3 md:p-4">
+                    <DataPagination
+                        page={filters.page}
+                        totalPages={data.totalPages}
+                        onPageChange={(page) => setFilters({ page })}
+                    />
+                </div>
+            </div>
             {data.items.length === 0 && (
-             <EmptyState
-                title="Create your first meeting"
-                description="Schedule a meeting to connect with others in real time."/>
-           )}
+                <div className="mt-6">
+                    <EmptyState
+                        title="Create your first meeting"
+                        description="Schedule a meeting to connect with others in real time."
+                    />
+                </div>
+            )}
         </div>
     )
 };

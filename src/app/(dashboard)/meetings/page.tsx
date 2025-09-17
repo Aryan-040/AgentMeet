@@ -28,8 +28,8 @@ const Page = async({ searchParams}: Props) => {
         redirect("/sign-in");
       }
   const queryClient = getQueryClient();
-  void queryClient.prefetchQuery(trpc.meetings.getMany.queryOptions({
-    ...filters
+  await queryClient.prefetchQuery(trpc.meetings.getMany.queryOptions({
+    ...filters,
   }));
   return (
     <>

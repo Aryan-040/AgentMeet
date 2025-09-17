@@ -8,8 +8,41 @@ import { and, count, desc, eq, getTableColumns, ilike, sql } from "drizzle-orm";
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE } from "@/constants";
 import { meetingsInsertSchema, meetingsUpdatedSchema } from "./schemas";
 import { MeetingStatus } from "../types";
+import { streamVideo } from "@/lib/stream-video";
+import { generateAvatarUri } from "@/lib/avatar";
 
 export const meetingsRouter = createTRPCRouter({
+  generateToken: protectedProcedure.mutation(async ({ ctx }) => {
+    try {
+      // Ensure the user exists as a Stream user before issuing a token
+      await streamVideo.upsertUsers([
+        {
+          id: ctx.auth.user.id,
+          name: ctx.auth.user.name,
+          role: "admin",
+          image:
+            ctx.auth.user.image ??
+            generateAvatarUri({ seed: ctx.auth.user.name, variant: "initials" }),
+        },
+      ]);
+
+      const now = Math.floor(Date.now() / 1000);
+      const token = streamVideo.generateUserToken({
+        user_id: ctx.auth.user.id,
+        exp: now + 60 * 60, // 1 hour from now
+        iat: now, // issued-at now
+        // alternatively: validity_in_seconds: 60 * 60,
+      });
+      return token;
+    } catch (err) {
+      console.error("Stream token generation failed:", err);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          "Video service misconfigured. Please verify NEXT_PUBLIC_STREAM_VIDEO_KEY and STREAM_VIDEO_SECRET.",
+      });
+    }
+  }),
   remove: protectedProcedure
   .input(z.object({id:z.string()}))
   .mutation(async ({ ctx, input}) => {
@@ -65,9 +98,56 @@ export const meetingsRouter = createTRPCRouter({
           })
           .returning();
 
-          
+        // Best-effort Stream setup; do not block meeting creation
+        try {
+          // Create Stream call
+          const call = streamVideo.video.call("default", createdMeeting.id);
+          await call.create({
+            data: {
+              created_by_id: ctx.auth.user.id,
+              custom: {
+                meetingId: createdMeeting.id,
+                meetingName: createdMeeting.name,
+              },
+              settings_override: {
+                transcription: {
+                  language: "en",
+                  mode: "auto-on",
+                  closed_caption_mode: "auto-on",
+                },
+                recording: {
+                  mode: "auto-on",
+                  quality: "1080p",
+                },
+              },
+            },
+          });
+
+          // Ensure agent exists then upsert as a Stream user
+          const [existingAgent] = await db
+            .select()
+            .from(agents)
+            .where(eq(agents.id, createdMeeting.agentId));
+
+          if (existingAgent) {
+            await streamVideo.upsertUsers([
+              {
+                id: existingAgent.id,
+                name: existingAgent.name,
+                role: "user",
+                image: generateAvatarUri({
+                  seed: existingAgent.name,
+                  variant: "botttsNeutral",
+                }),
+              },
+            ]);
+          }
+        } catch (streamError) {
+          console.warn("Stream setup failed during meeting.create", streamError);
+        }
 
         return createdMeeting;
+
       } catch (error) {
           console.error("Database error in meetings.create:", error);
         throw new Error("Failed to create meeting. Please try again.");
