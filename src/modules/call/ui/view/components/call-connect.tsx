@@ -64,7 +64,6 @@ export const CallConnect = ({
             const callingState = nextCall.state.callingState;
             if (callingState !== CallingState.LEFT) {
                 nextCall.leave();
-                nextCall.endCall();
             }
             setCall(undefined);
         };
@@ -81,7 +80,7 @@ export const CallConnect = ({
     return (
         <StreamVideo client={client}>
             <StreamCall call={call}>
-                <CallUI meetingName={meetingName} />
+                <CallUI meetingId={meetingId} meetingName={meetingName} />
             </StreamCall>
         </StreamVideo>
     );
