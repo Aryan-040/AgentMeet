@@ -26,12 +26,12 @@ export const meetingsRouter = createTRPCRouter({
         },
       ]);
 
-      const now = Math.floor(Date.now() / 1000);
+      // Mitigate client/server clock skew by backdating issued_at a bit
+      const nowInSeconds = Math.floor(Date.now() / 1000);
       const token = streamVideo.generateUserToken({
         user_id: ctx.auth.user.id,
-        exp: now + 60 * 60, // 1 hour from now
-        iat: now, // issued-at now
-        // alternatively: validity_in_seconds: 60 * 60,
+        validity_in_seconds: 60 * 60,
+        iat: nowInSeconds - 120,
       });
       return token;
     } catch (err) {
