@@ -73,7 +73,7 @@ function formatTimestamp(timestampMs: number): string {
 }
 
 // Helper function to format transcript with readable timestamps
-function formatTranscriptWithReadableTimestamps(transcript: StreamTranscriptItem[]): any[] {
+function formatTranscriptWithReadableTimestamps(transcript: StreamTranscriptItem[]): Record<string, unknown>[] {
   return transcript.map(item => ({
     ...item,
     start_time: formatTimestamp(item.start_ts),

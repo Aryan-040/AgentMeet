@@ -20,13 +20,17 @@ const Page = async ({ params }:Props) => {
         redirect("/sign-in");
     }
     const queryClient = getQueryClient();
-    try {
-        await queryClient.prefetchQuery(
-            trpc.meetings.getOne.queryOptions({ id: meetingId }),
-        );
-    } catch (e) {
-        // If DB is temporarily unavailable, continue rendering and let client fetch
-        console.warn("Prefetch meetings.getOne failed", e);
+    
+    // Don't prefetch during build time to avoid database connection issues
+    if (process.env.NODE_ENV !== 'production') {
+        try {
+            await queryClient.prefetchQuery(
+                trpc.meetings.getOne.queryOptions({ id: meetingId }),
+            );
+        } catch (e) {
+            // If DB is temporarily unavailable, continue rendering and let client fetch
+            console.warn("Prefetch meetings.getOne failed", e);
+        }
     }
 
     return (

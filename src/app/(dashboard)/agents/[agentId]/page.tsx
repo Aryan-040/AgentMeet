@@ -12,9 +12,17 @@ const Page = async ({params} : Props) => {
     const { agentId } = await params;
 
     const queryClient = getQueryClient();
-    void queryClient.prefetchQuery(
-        trpc.agents.getOne.queryOptions({ id: agentId}),
-    );
+    
+    // Don't prefetch during build time to avoid database connection issues
+    if (process.env.NODE_ENV !== 'production') {
+        try {
+            await queryClient.prefetchQuery(
+                trpc.agents.getOne.queryOptions({ id: agentId}),
+            );
+        } catch (error) {
+            console.warn("Prefetch failed during build:", error);
+        }
+    }
     return (
         <HydrationBoundary state={dehydrate(queryClient)}>
             <Suspense fallback ={<AgentIdViewLoading/>}>

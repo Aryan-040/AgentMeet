@@ -1,4 +1,4 @@
-import { Loader2, Loader2Icon } from "lucide-react";
+import { Loader2Icon } from "lucide-react";
 
 interface Props {
     title: string;

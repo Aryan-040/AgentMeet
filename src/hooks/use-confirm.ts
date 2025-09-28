@@ -1,9 +1,5 @@
 import { useState } from "react";
 
-interface ConfirmOptions {
-  title: string;
-  description: string;
-}
 
 export const useConfirm = (title: string, description: string) => {
   const [isOpen, setIsOpen] = useState(false);
