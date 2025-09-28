@@ -1,6 +1,5 @@
 "use client"
 import { format } from "date-fns";
-import humanizeDuration from "humanize-duration";
 
 import {
     CircleCheckIcon,
@@ -12,7 +11,7 @@ import {
     ClockArrowUpIcon,
 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { cn, formatDuration } from "@/lib/utils";
 
 import { GeneratedAvatarProps } from "@/components/generated-avatar"
 import { MeetingGetMany } from "@/modules/meetings/types"
@@ -26,13 +25,6 @@ import { Badge } from "@/components/ui/badge"
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
 
-function formatDuration(seconds: number){
-    return humanizeDuration(seconds * 1000, {
-        largest: 1,
-        round: true,
-        units: ["h", "m", "s"]
-    });
-}
 
 const statusIcons = {
     upcoming: ClockArrowUpIcon,

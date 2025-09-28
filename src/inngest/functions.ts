@@ -13,31 +13,73 @@ function generateFallbackSummary(transcript: StreamTranscriptItem[]): string {
     return "No transcript data available for summarization.";
   }
 
-  // Extract key information from transcript
+  
   const speakers = [...new Set(transcript.map(item => item.speaker_id))];
   const totalMessages = transcript.length;
   const duration = transcript.length > 0 ? 
     Math.round((transcript[transcript.length - 1].stop_ts - transcript[0].start_ts) / 1000 / 60) : 0;
 
+  const speakerGroups: { [key: string]: StreamTranscriptItem[] } = {};
+  transcript.forEach(item => {
+    if (!speakerGroups[item.speaker_id]) {
+      speakerGroups[item.speaker_id] = [];
+    }
+    speakerGroups[item.speaker_id].push(item);
+  });
+
+  // Generate notes with readable timestamps
+  let notesSection = "### Notes\n";
+  
+  Object.entries(speakerGroups).forEach(([speakerId, messages]) => {
+    if (messages.length > 0) {
+      const firstMessage = messages[0];
+      const lastMessage = messages[messages.length - 1];
+      const startTime = formatTimestamp(firstMessage.start_ts);
+      const endTime = formatTimestamp(lastMessage.stop_ts);
+      
+      notesSection += `#### ${speakerId} (${startTime} - ${endTime})\n`;
+      messages.slice(0, 3).forEach(msg => {
+        notesSection += `- ${msg.text.substring(0, 100)}${msg.text.length > 100 ? '...' : ''}\n`;
+      });
+      if (messages.length > 3) {
+        notesSection += `- ... and ${messages.length - 3} more messages\n`;
+      }
+      notesSection += '\n';
+    }
+  });
+
   // Create a basic summary
   const summary = `### Overview
 This meeting involved ${speakers.length} participant(s): ${speakers.join(', ')}. The session lasted approximately ${duration} minutes with ${totalMessages} total messages exchanged.
 
-### Notes
+${notesSection}
+
 #### Meeting Summary
 - **Duration**: ${duration} minutes
 - **Participants**: ${speakers.join(', ')}
 - **Total Messages**: ${totalMessages}
 - **Status**: Meeting completed successfully
 
-#### Key Points
-- Meeting transcript has been processed and recorded
-- All participants were active during the session
-- Summary generated using fallback method (OpenAI API not configured)
-
 *Note: For AI-powered summarization, please configure the OPENAI_API_KEY environment variable.*`;
 
   return summary;
+}
+
+// Helper function to convert milliseconds to readable time format
+function formatTimestamp(timestampMs: number): string {
+  const minutes = Math.floor(timestampMs / 60000);
+  const seconds = Math.floor((timestampMs % 60000) / 1000);
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+// Helper function to format transcript with readable timestamps
+function formatTranscriptWithReadableTimestamps(transcript: StreamTranscriptItem[]): any[] {
+  return transcript.map(item => ({
+    ...item,
+    start_time: formatTimestamp(item.start_ts),
+    stop_time: formatTimestamp(item.stop_ts),
+    duration_seconds: Math.round((item.stop_ts - item.start_ts) / 1000)
+  }));
 }
 
 // Simple summarization function using OpenAI directly
@@ -49,6 +91,9 @@ async function summarizeTranscript(transcript: StreamTranscriptItem[]): Promise<
       console.warn("[summarizeTranscript] OPENAI_API_KEY is not set, using fallback summary");
       return generateFallbackSummary(transcript);
     }
+
+    // Format transcript with readable timestamps
+    const formattedTranscript = formatTranscriptWithReadableTimestamps(transcript);
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -69,21 +114,23 @@ Use the following markdown structure for every output:
 Provide a detailed, engaging summary of the session's content. Focus on major features, user workflows, and any key takeaways. Write in a narrative style, using full sentences. Highlight unique or powerful aspects of the product, platform, or discussion.
 
 ### Notes
-Break down key content into thematic sections with timestamp ranges. Each section should summarize key points, actions, or demos in bullet format.
+Break down key content into thematic sections with timestamp ranges. Use the readable time format (e.g., "2:30 - 4:15") from the start_time and stop_time fields. Each section should summarize key points, actions, or demos in bullet format.
 
 Example:
-#### Section Name
+#### Section Name (2:30 - 4:15)
 - Main point or demo shown here
 - Another key insight or interaction
 - Follow-up tool or explanation provided
 
-#### Next Section
+#### Next Section (4:15 - 6:45)
 - Feature X automatically does Y
-- Mention of integration with Z`
+- Mention of integration with Z
+
+IMPORTANT: Always use the readable time format (start_time - stop_time) when referencing timestamps, not the raw timestamp values.`
           },
           {
             role: "user",
-            content: `Summarize the following transcript: ${JSON.stringify(transcript)}`
+            content: `Summarize the following transcript: ${JSON.stringify(formattedTranscript)}`
           }
         ],
         temperature: 0.7,
