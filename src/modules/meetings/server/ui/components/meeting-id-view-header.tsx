@@ -1,4 +1,4 @@
-import { ChevronRightIcon , TrashIcon, PencilIcon, MoreVerticalIcon} from "lucide-react";
+import { ChevronRightIcon , TrashIcon, PencilIcon, MoreVerticalIcon, RefreshCwIcon} from "lucide-react";
 import Link from "next/link";
 
 import {
@@ -23,13 +23,17 @@ interface Props {
     meetingName : string;
     onEdit: () => void;
     onRemove: () => void;
+    onRegenerateSummary?: () => void;
+    canRegenerateSummary?: boolean;
 }
 
 export const MeetingidViewHeader = ({
     meetingId,
     meetingName,
     onEdit,
-    onRemove
+    onRemove,
+    onRegenerateSummary,
+    canRegenerateSummary = false
 }:Props) => {
     return(
         <div className="flex items-center justify-between">
@@ -74,6 +78,12 @@ export const MeetingidViewHeader = ({
                         <PencilIcon className="size-4 text-black"/>
                         Edit
                     </DropdownMenuItem>
+                    {canRegenerateSummary && onRegenerateSummary && (
+                        <DropdownMenuItem onClick={onRegenerateSummary}>
+                            <RefreshCwIcon className="size-4 text-black"/>
+                            Regenerate Summary
+                        </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={onRemove}>
                         <TrashIcon className="size-4 text-black"/>
                         Delete

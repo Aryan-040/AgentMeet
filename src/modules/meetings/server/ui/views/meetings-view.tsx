@@ -15,9 +15,19 @@ export const MeetingsView = () => {
     const trpc = useTRPC();
     const router = useRouter();
     const [filters,setFilters] = useMeetingsFilters();
-    const { data } = useSuspenseQuery(trpc.meetings.getMany.queryOptions({
-        ...filters,
-    }));
+    const { data } = useSuspenseQuery({
+        ...trpc.meetings.getMany.queryOptions({
+            ...filters,
+        }),
+        // Enable polling if there are any processing meetings
+        refetchInterval: (query) => {
+            // Only poll if there are meetings in processing state
+            const hasProcessingMeetings = query.state.data?.items?.some(meeting => meeting.status === "processing");
+            return hasProcessingMeetings ? 5000 : false; // Poll every 5 seconds
+        },
+        // Stop polling when tab is not active
+        refetchIntervalInBackground: false,
+    });
 
     return (
         <div className="flex-1 px-4 pb-6 md:px-8">

@@ -2,16 +2,18 @@
 import { ErrorState } from "@/components/error-state ";
 import { LoadingState } from "@/components/loading-state";
 import { useTRPC } from "@/trpc/client";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { MeetingidViewHeader } from "../components/meeting-id-view-header";
 import { useRouter } from "next/navigation";
 import { useConfirm } from "@/hooks/use-confirm";
 import { UpdateMeetingDialog } from "../components/update-meeting-dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { UpcomingState } from "../components/upcoming-state";
 import { ActiveState } from "../components/active-state";
 import { CancelledState } from "../components/cancelled-state";
 import { ProcessingState } from "../components/processing-state";
+import { CompletedState } from "../components/completed-state";
 
 interface Props{
     meetingId:string;
@@ -27,15 +29,22 @@ export const MeetingIdView = ({meetingId}:Props) => {
         "Are you sure?",
         "the following actions will remove this meeting"
     );
-    const {data} = useSuspenseQuery(
-        trpc.meetings.getOne.queryOptions({ id:meetingId}),
-    );
+    const {data} = useSuspenseQuery({
+        ...trpc.meetings.getOne.queryOptions({ id:meetingId}),
+        // Enable polling for processing meetings to automatically update status
+        refetchInterval: (query) => {
+            // Only poll if the meeting is in processing state
+            return query.state.data?.status === "processing" ? 3000 : false; // Poll every 3 seconds
+        },
+        // Stop polling when tab is not active
+        refetchIntervalInBackground: false,
+    });
 
     const removeMeeting = useMutation(
         trpc.meetings.remove.mutationOptions({
-            onSuccess:()=>{
+            onSuccess:async()=>{
                 queryClient.invalidateQueries(trpc.meetings.getMany.queryOptions({}))
-                //TODO invalidate free tier
+                await queryClient.invalidateQueries(trpc.premium.getFreeUsage.queryOptions());
                 router.push("/meetings")
             },
         })
@@ -46,6 +55,24 @@ export const MeetingIdView = ({meetingId}:Props) => {
         if(!ok) return;
 
         await removeMeeting.mutateAsync({ id: meetingId });
+    };
+
+    const regenerateSummary = useMutation(
+        trpc.meetings.regenerateSummary.mutationOptions({
+            onSuccess: () => {
+                // Invalidate queries to refresh the data
+                queryClient.invalidateQueries(trpc.meetings.getOne.queryOptions({ id: meetingId }));
+                // Show success message
+                toast.success("Summary regeneration started! The page will update automatically.");
+            },
+            onError: (error) => {
+                toast.error(`Failed to regenerate summary: ${error.message}`);
+            },
+        })
+    );
+
+    const handleRegenerateSummary = async () => {
+        await regenerateSummary.mutateAsync({ id: meetingId });
     };
 
     const isActive = data.status ==="active";
@@ -67,10 +94,12 @@ export const MeetingIdView = ({meetingId}:Props) => {
             meetingName={data.name}
             onEdit={() => setUpdateMeetingDialogOpen(true)}
             onRemove={handelRemoveMeeting}
+            onRegenerateSummary={handleRegenerateSummary}
+            canRegenerateSummary={isCompleted && !!data.transcriptUrl}
             />
             {isCancelled && <CancelledState/>}
             {isProcessing && <ProcessingState/>}
-            {isCompleted && <div>Completed</div>}
+            {isCompleted && <CompletedState data={data}/>}
             {isActive && <ActiveState meetingId={meetingId}/>}
             {isUpcoming && (<UpcomingState
             meetingId={meetingId}
