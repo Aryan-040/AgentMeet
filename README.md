@@ -1,9 +1,5 @@
 # AgentMeet - AI-Powered Meeting Assistant Platform
 
-<div align="center">
-  <img src="/logo.svg" alt="AgentMeet Logo" width="120" height="120" />
-  
-  **Your AI-powered meeting assistant platform for creating, managing, and collaborating with intelligent agents**
   
   [![Next.js](https://img.shields.io/badge/Next.js-15.3.2-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
   [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
@@ -269,5 +265,4 @@ npm run db:studio    # Open Drizzle Studio
 <div align="center">
   <strong>Built with ❤️ for the future of AI-human collaboration</strong>
   
-  [Website](https://agentmeet.com) • [Documentation](https://docs.agentmeet.com) • [Community](https://discord.gg/agentmeet)
 </div>
