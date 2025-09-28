@@ -26,7 +26,6 @@ interface Props {
 }
 
 export const AgentidViewHeader = ({
-    agentId,
     agentName,
     onEdit,
     onRemove

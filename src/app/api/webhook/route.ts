@@ -306,3 +306,30 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ status: "ok" });
 }
+
+export async function PUT(req: NextRequest) {
+  const signature = req.headers.get("x-signature");
+
+  if (!signature) {
+    return NextResponse.json({ error: "Missing signature" }, { status: 400 });
+  }
+
+  const body = await req.text();
+
+  if (!body) {
+    return NextResponse.json({ error: "Empty body" }, { status: 400 });
+  }
+
+  if (!verifySignatureWithSDk(body, signature)) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  }
+
+  try {
+    JSON.parse(body);
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  // Handle PUT requests (same logic as POST)
+  return POST(req);
+}

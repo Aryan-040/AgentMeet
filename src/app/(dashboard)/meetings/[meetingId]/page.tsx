@@ -24,10 +24,18 @@ const Page = async({params}:Props) => {
     }
 
     const queryClient = getQueryClient();
-    void queryClient.prefetchQuery(
-        trpc.meetings.getOne.queryOptions({ id: meetingId}),
-    );
-    //TODO prefetch 'meeting.getTranscript'
+    
+    // Don't prefetch during build time to avoid database connection issues
+    if (process.env.NODE_ENV !== 'production') {
+        try {
+            await queryClient.prefetchQuery(
+                trpc.meetings.getOne.queryOptions({ id: meetingId}),
+            );
+        } catch (error) {
+            console.warn("Prefetch failed during build:", error);
+        }
+    }
+    
     return(
         <HydrationBoundary state={dehydrate(queryClient)}>
             <Suspense fallback={<MeetingIdViewLoading/>}>

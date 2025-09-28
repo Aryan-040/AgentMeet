@@ -28,7 +28,6 @@ interface Props {
 }
 
 export const MeetingidViewHeader = ({
-    meetingId,
     meetingName,
     onEdit,
     onRemove,

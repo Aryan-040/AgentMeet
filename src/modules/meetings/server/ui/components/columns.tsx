@@ -4,7 +4,6 @@ import { format } from "date-fns";
 import {
     CircleCheckIcon,
     CircleXIcon,
-    CircleArrowUpIcon,
     ClockFadingIcon,
     CornerDownRightIcon,
     LoaderIcon,
@@ -15,10 +14,7 @@ import { cn, formatDuration } from "@/lib/utils";
 
 import { GeneratedAvatarProps } from "@/components/generated-avatar"
 import { MeetingGetMany } from "@/modules/meetings/types"
-import { inferRouterOutputs } from "@trpc/server"
-import type { AppRouter } from "@/trpc/routers/_app"
 
-type AgentGetMany = inferRouterOutputs<AppRouter>["agents"]["getMany"]["items"][0]
 import { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 

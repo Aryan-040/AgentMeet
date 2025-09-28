@@ -30,40 +30,31 @@ const Page = async ({searchParams}: Props) => {
     redirect("/sign-in");
   }
 
-  try {
-    const queryClient = getQueryClient();
-    await queryClient.prefetchQuery(trpc.agents.getMany.queryOptions({
-      ...filters
-    }));
-
-    return (
-      <>
-        <AgentsListHeader />
-        <HydrationBoundary state={dehydrate(queryClient)}>
-          <Suspense fallback={<AgentsViewLoading />}>
-            <ErrorBoundary fallback={<AgentsViewError />}>
-              <AgentsView />
-            </ErrorBoundary>
-          </Suspense>
-        </HydrationBoundary>
-      </>
-    );
-  } catch (error) {
-    console.error("Database connection error:", error);
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Database Connection Error</h1>
-          <p className="text-gray-600 mb-4">
-            Unable to connect to the database. Please check your DATABASE_URL environment variable.
-          </p>
-          <p className="text-sm text-gray-500">
-            Make sure to create a .env.local file with your DATABASE_URL
-          </p>
-        </div>
-      </div>
-    );
+  const queryClient = getQueryClient();
+  
+  // Don't prefetch during build time to avoid database connection issues
+  if (process.env.NODE_ENV !== 'production') {
+    try {
+      await queryClient.prefetchQuery(trpc.agents.getMany.queryOptions({
+        ...filters
+      }));
+    } catch (error) {
+      console.warn("Prefetch failed during build:", error);
+    }
   }
+
+  return (
+    <>
+      <AgentsListHeader />
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <Suspense fallback={<AgentsViewLoading />}>
+          <ErrorBoundary fallback={<AgentsViewError />}>
+            <AgentsView />
+          </ErrorBoundary>
+        </Suspense>
+      </HydrationBoundary>
+    </>
+  );
 };
 
 export default Page;

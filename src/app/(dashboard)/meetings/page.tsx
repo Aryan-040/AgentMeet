@@ -28,9 +28,17 @@ const Page = async({ searchParams}: Props) => {
         redirect("/sign-in");
       }
   const queryClient = getQueryClient();
-  await queryClient.prefetchQuery(trpc.meetings.getMany.queryOptions({
-    ...filters,
-  }));
+  
+  // Don't prefetch during build time to avoid database connection issues
+  if (process.env.NODE_ENV !== 'production') {
+    try {
+      await queryClient.prefetchQuery(trpc.meetings.getMany.queryOptions({
+        ...filters,
+      }));
+    } catch (error) {
+      console.warn("Prefetch failed during build:", error);
+    }
+  }
   return (
     <>
     <MeetingsListHeader/>

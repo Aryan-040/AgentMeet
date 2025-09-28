@@ -3,6 +3,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import Image from "next/image";
 import { OctagonAlertIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
@@ -90,12 +91,12 @@ export const SignInView = () => {
           <div className="bg-gradient-to-br from-green-700 to-green-900 flex flex-col gap-y-3 items-center justify-center h-full py-8 text-white order-first md:order-last">
             {/* Logo + Name side by side */}
             <div className="flex items-center gap-3">
-              <img src="/logo.svg" alt="Hire AI" className="h-[48px] w-[48px]" />
-              <p className="text-2xl md:text-3xl font-bold">HireAI</p>
+              <Image src="/logo.svg" alt="AgentMeet" width={48} height={48} />
+              <p className="text-2xl md:text-3xl font-bold">AgentMeet</p>
             </div>
             {/* Tagline */}
             <p className="text-xs md:text-sm text-green-100 px-6 text-center max-w-xs">
-              Your AI-powered interview assistant
+              Your AI-powered meeting assistant
             </p>
           </div>
 
