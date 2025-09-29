@@ -32,7 +32,7 @@ export function DataTable<TData, TValue>({
   })
 
   return (
-    <div className="rounded-lg border border-slate-700/50 bg-slate-800/50 overflow-hidden">
+    <div className="rounded-lg border border-slate-700/50 bg-slate-800/50 overflow-hidden table-enhanced table-dark-contrast">
       <Table className="text-slate-200">
        
         <TableBody>
@@ -42,10 +42,10 @@ export function DataTable<TData, TValue>({
               onClick={()=>onRowClick?.(row.original)}
                 key={row.id}
                 data-state={row.getIsSelected() && "selected"}
-                className="hover:bg-muted/50"
+                className="hover:bg-slate-700/30 border-b border-slate-700/30"
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="text-sm p-4">
+                  <TableCell key={cell.id} className="text-sm p-4 text-slate-200 font-medium">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}

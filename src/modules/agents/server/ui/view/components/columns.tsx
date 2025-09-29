@@ -44,14 +44,15 @@ export const columns: ColumnDef<AgentGetMany>[]= [
   },
   {
     accessorKey: "meetingCount",
-    header: "Meeting" ,
+    header: "Meetings" ,
     cell: ({ row }) => (
         <Badge
             variant="outline"
-            className="flex items-center gap-x-2 [&>svg]:size-4"
+            className="flex items-center gap-x-2 [&>svg]:size-4 number-badge"
         >
-            <VideoIcon className="text-blue-700"/>
-            {row.original.meetingCount} {row.original.meetingCount === 1 ? "meeting" : "meetings"}
+            <VideoIcon className="text-blue-400"/>
+            <span className="font-bold text-white">{row.original.meetingCount}</span>
+            <span className="text-slate-300">{row.original.meetingCount === 1 ? "meeting" : "meetings"}</span>
         </Badge>
     )
   }

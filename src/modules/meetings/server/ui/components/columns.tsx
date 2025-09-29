@@ -44,12 +44,12 @@ export const columns: ColumnDef<MeetingGetMany[number]>[] = [
     header: "Meeting Name",
     cell: ({row}) => (
         <div className="flex flex-col gap-y-1">
-            <span className="font-semibold capitalize">{row.original.name}</span>
+            <span className="font-bold text-slate-100 capitalize">{row.original.name}</span>
             
             <div className="flex items-center gap-x-2">
                 <div className="flex items-center gap-x-1">
-                    <CornerDownRightIcon className="size-3 text-muted-foreground"/>
-                    <span className="text-sm text-muted-foreground max-w-[200px] truncate capitalize">
+                    <CornerDownRightIcon className="size-3 text-slate-400"/>
+                    <span className="text-sm text-slate-300 max-w-[200px] truncate capitalize font-medium">
                         {row.original.agent.name}
                     </span>
                 </div>
@@ -58,7 +58,7 @@ export const columns: ColumnDef<MeetingGetMany[number]>[] = [
                 seed={row.original.agent.name}
                 className="size-4"
                 />
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-slate-400 font-medium">
                     {row.original.startedAt ? format(row.original.startedAt, "MMM d, yyyy h:mm a") : "Not started"}
                 </span>
             </div>
@@ -75,7 +75,7 @@ export const columns: ColumnDef<MeetingGetMany[number]>[] = [
         <Badge 
         variant="outline"
         className={cn(
-            "capitalize [&>svg]:size-4 text-muted-foreground",
+            "capitalize [&>svg]:size-4 font-bold status-badge",
             statueColorMap[row.original.status as keyof typeof statueColorMap]
         )}
        >
@@ -95,10 +95,12 @@ export const columns: ColumnDef<MeetingGetMany[number]>[] = [
     cell: ({ row }) => (
         <Badge
         variant="outline"
-        className="capitalize [&>svg]:size-4 flex items-center gap-x-2"
+        className="capitalize [&>svg]:size-4 flex items-center gap-x-2 number-badge"
         >
-        <ClockFadingIcon className="text-blue-700"/>
-        {row.original.duration ? formatDuration(row.original.duration) : "No Duration"}
+        <ClockFadingIcon className="text-purple-400"/>
+        <span className="font-bold text-white">
+          {row.original.duration ? formatDuration(row.original.duration) : "No Duration"}
+        </span>
         </Badge>
     )
   }
