@@ -390,4 +390,40 @@ export const meetingsRouter = createTRPCRouter({
 
       return { success: true, message: "Summary regeneration started" };
     }),
+  getUpcoming: protectedProcedure
+    .query(async ({ ctx }) => {
+      const upcomingMeeting = await db
+        .select({
+          id: meetings.id,
+          name: meetings.name,
+          startedAt: meetings.startedAt,
+        })
+        .from(meetings)
+        .where(
+          and(
+            eq(meetings.userId, ctx.auth.user.id),
+            eq(meetings.status, MeetingStatus.Upcoming)
+          )
+        )
+        .orderBy(meetings.startedAt)
+        .limit(1);
+
+      return upcomingMeeting[0] || null;
+    }),
+  getCompletedCount: protectedProcedure
+    .query(async ({ ctx }) => {
+      const [result] = await db
+        .select({
+          count: count(meetings.id),
+        })
+        .from(meetings)
+        .where(
+          and(
+            eq(meetings.userId, ctx.auth.user.id),
+            eq(meetings.status, MeetingStatus.Completed)
+          )
+        );
+
+      return result.count;
+    }),
 });

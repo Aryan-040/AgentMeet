@@ -39,27 +39,27 @@ export const MeetingidViewHeader = ({
             <Breadcrumb>
                 <BreadcrumbList>
                     <BreadcrumbItem>
-                        <BreadcrumbLink asChild className="font-medium text-xl">
+                        <BreadcrumbLink asChild className="font-medium text-xl text-gray-200 hover:text-white transition-colors">
                             <Link href="/">
                             Home
                             </Link>
                         </BreadcrumbLink>
                     </BreadcrumbItem>
-                    <BreadcrumbSeparator className="text-foreground text-xl font-medium [&>svg]:size-4">
+                    <BreadcrumbSeparator className="text-gray-400 text-xl font-medium [&>svg]:size-4">
                     <ChevronRightIcon/>
                     </BreadcrumbSeparator>
                     <BreadcrumbItem>
-                        <BreadcrumbLink asChild className="font-medium text-xl">
+                        <BreadcrumbLink asChild className="font-medium text-xl text-gray-200 hover:text-white transition-colors">
                             <Link href="/meetings">
                             My Meetings
                             </Link>
                         </BreadcrumbLink>
                     </BreadcrumbItem>
-                    <BreadcrumbSeparator className="text-foreground text-xl font-medium [&>svg]:size-4">
+                    <BreadcrumbSeparator className="text-gray-400 text-xl font-medium [&>svg]:size-4">
                     <ChevronRightIcon/>
                     </BreadcrumbSeparator>
                     <BreadcrumbItem>
-                        <BreadcrumbPage className="font-medium text-xl text-foreground">
+                        <BreadcrumbPage className="font-medium text-xl text-white font-bold">
                             {meetingName}
                         </BreadcrumbPage>
                     </BreadcrumbItem>
@@ -68,8 +68,8 @@ export const MeetingidViewHeader = ({
 
             <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost">
-                        <MoreVerticalIcon/>
+                    <Button variant="ghost" className="hover:bg-slate-700/50 p-2">
+                        <MoreVerticalIcon className="h-5 w-5 text-gray-200 hover:text-white transition-colors"/>
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
