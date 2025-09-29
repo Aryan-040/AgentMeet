@@ -122,7 +122,7 @@ export const SignInView = () => {
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="hire@example.com"
+                        placeholder="agent@example.com"
                         {...field}
                       />
                     </FormControl>

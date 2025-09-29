@@ -145,7 +145,7 @@ export const SignUpView = () => {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="hire@example.com" {...field} />
+                      <Input type="email" placeholder="agent@example.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
