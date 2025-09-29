@@ -5,12 +5,19 @@ import { StreamTheme, useCall, useCallStateHooks, CallingState } from "@stream-i
 import { CallLobby } from "./call-lobby";
 import { CallActive } from "./call-active";
 import { CallEnded } from "./call-ended";
+import { AIAgentJoiner } from "./ai-agent-joiner";
+
 interface Props {
     meetingId: string;
     meetingName: string;
+    agent: {
+        id: string;
+        name: string;
+        instructions: string;
+    };
 };
 
-export const CallUI = ({ meetingId, meetingName}: Props) => {
+export const CallUI = ({ meetingId, meetingName, agent}: Props) => {
     const call = useCall();
     const { useCallCallingState } = useCallStateHooks();
     const callingState = useCallCallingState();
@@ -51,7 +58,17 @@ export const CallUI = ({ meetingId, meetingName}: Props) => {
     return (
         <StreamTheme className="h-screen">
             {show === "lobby" && <CallLobby onJoin={handleJoin}/>}
-            {show === "call" && <CallActive onLeave={handleLeave} meetingName={meetingName}/>}
+            {show === "call" && (
+                <>
+                    <CallActive onLeave={handleLeave} meetingName={meetingName}/>
+                    <AIAgentJoiner 
+                        meetingId={meetingId}
+                        agentId={agent.id}
+                        agentName={agent.name}
+                        agentInstructions={agent.instructions}
+                    />
+                </>
+            )}
             {show === "ended" && <CallEnded/>}
         </StreamTheme>
     )

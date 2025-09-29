@@ -202,7 +202,10 @@ export async function POST(req: NextRequest) {
     const channelId = event.channel_id;
     const text = event.message?.text;
 
+    console.log("[webhook] New message received:", { userId, channelId, text });
+
     if (!userId || !channelId || !text){
+      console.log("[webhook] Missing required fields");
       return NextResponse.json(
         {error: "Missing required fields"},
         {status:400}
@@ -215,6 +218,7 @@ export async function POST(req: NextRequest) {
       .where(and(eq(meetings.id, channelId), eq(meetings.status, "completed")));
 
     if (!existingMeeting){
+      console.log("[webhook] Meeting not found or not completed");
       return NextResponse.json({error: "Meeting not found"}, {status: 404});
     }
 
@@ -224,8 +228,11 @@ export async function POST(req: NextRequest) {
       .where(eq(agents.id, existingMeeting.agentId));
 
       if (!existingAgent){
+        console.log("[webhook] Agent not found");
         return NextResponse.json({error: "Agent not found"}, {status: 404});
       }
+
+      console.log("[webhook] Processing message for agent:", existingAgent.name);
 
       if(userId !== existingAgent.id){
         const instructions = `
@@ -259,6 +266,11 @@ export async function POST(req: NextRequest) {
           content: message.text || "",
         }));
 
+        console.log("[webhook] Sending to GPT with context:", { 
+          instructionsLength: instructions.length, 
+          previousMessagesCount: previousMessages.length 
+        });
+
         const GPTResponse = await openaiClient.chat.completions.create({
           messages: [
             { role: "system", content: instructions },
@@ -271,11 +283,14 @@ export async function POST(req: NextRequest) {
         const GPTResponseText = GPTResponse.choices[0].message.content;
 
         if(!GPTResponseText){
+          console.log("[webhook] No response from GPT");
           return NextResponse.json(
             { error: "No response frm GPT"},
             { status:400 }
           );
         }
+
+        console.log("[webhook] GPT response received, sending message");
 
         const avatarUrl = generateAvatarUri({
           seed:existingAgent.name,
@@ -288,7 +303,7 @@ export async function POST(req: NextRequest) {
           image:avatarUrl,
         });
 
-        channel.sendMessage({
+        await channel.sendMessage({
           text: GPTResponseText,
           user: {
             id:existingAgent.id,
@@ -296,6 +311,8 @@ export async function POST(req: NextRequest) {
             image:avatarUrl,
           },
         });
+
+        console.log("[webhook] AI response sent successfully");
       }
   
   }

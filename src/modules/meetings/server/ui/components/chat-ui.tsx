@@ -46,13 +46,39 @@ export const ChatUI = ({
   });
 
   useEffect(() => {
-    if (!client) return;
-
-    const channel = client.channel("messaging", meetingId, {
-      members: [userId],
-    });
-
-    setChannel(channel);
+    const initChat = async () => {
+      if (!client) return;
+      try {
+        console.log("Initializing chat for meeting:", meetingId);
+        // Check if channel exists first
+        const channel = client.channel("messaging", meetingId);
+        try {
+          await channel.watch();
+          console.log("Channel exists and watch started");
+        } catch {
+          console.log("Channel doesn't exist, creating new one");
+  
+          const newChannel = client.channel("messaging", meetingId, {
+            members: [userId],
+            created_by: { id: userId },
+          });
+          await newChannel.create();
+          await newChannel.watch();
+          console.log("New channel created and watch started");
+          setChannel(newChannel);
+          return;
+        }
+        setChannel(channel);
+      } catch (error) {
+        console.error("Failed to initialize chat:", error);
+      }
+    };
+    initChat();
+    return () => {
+      if (client) {
+        client.disconnectUser();
+      }
+    };
   }, [client, meetingId, meetingName, userId]);
 
   if (!client) {
