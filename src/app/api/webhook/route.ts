@@ -18,10 +18,26 @@ import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import { inngest } from "@/inngest/client";
 import { streamChat } from "@/lib/stream-chat";
 
+// Disable body parsing for webhook signature verification
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-function verifySignatureWithSDk(body: string, signature: string): boolean {
-  return streamVideo.verifyWebhook(body, signature);
+function verifySignatureWithSdk(body: string, signature: string): boolean {
+  try {
+    console.log("[webhook] Verifying signature", {
+      bodyLength: body.length,
+      signatureLength: signature.length,
+      bodyPreview: body.substring(0, 100),
+    });
+    const result = streamVideo.verifyWebhook(body, signature);
+    console.log("[webhook] Signature verification result:", result);
+    return result;
+  } catch (error) {
+    console.error("[webhook] Signature verification error:", error);
+    return false;
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -31,9 +47,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing signature" }, { status: 400 });
   }
 
+  // Read raw body for signature verification
   const body = await req.text();
 
-  if (!verifySignatureWithSDk(body, signature)) {
+  if (!verifySignatureWithSdk(body, signature)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
@@ -53,7 +70,14 @@ export async function POST(req: NextRequest) {
     const meetingId =
       event.call?.custom?.meetingId ?? event.call_cid?.split(":")[1];
 
+    console.log("[webhook] call.session_started event received", {
+      meetingId,
+      callCid: event.call_cid,
+      custom: event.call?.custom,
+    });
+
     if (!meetingId) {
+      console.error("[webhook] Missing meetingId in event", event);
       return NextResponse.json({ error: "Missing meetingId" }, { status: 400 });
     }
 
@@ -71,8 +95,16 @@ export async function POST(req: NextRequest) {
       );
 
     if (!existingMeeting) {
+      console.error("[webhook] Meeting not found", { meetingId });
       return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
     }
+    
+    console.log("[webhook] Found meeting", {
+      meetingId: existingMeeting.id,
+      agentId: existingMeeting.agentId,
+      status: existingMeeting.status,
+    });
+
     await db
       .update(meetings)
       .set({
@@ -87,8 +119,15 @@ export async function POST(req: NextRequest) {
       .where(eq(agents.id, existingMeeting.agentId));
 
     if (!existingAgent) {
+      console.error("[webhook] Agent not found", { agentId: existingMeeting.agentId });
       return NextResponse.json({ error: "agent not found" }, { status: 404 });
     }
+
+    console.log("[webhook] Found agent", {
+      agentId: existingAgent.id,
+      name: existingAgent.name,
+      hasInstructions: !!existingAgent.instructions,
+    });
 
     try {
       if (!process.env.OPENAI_API_KEY) {
@@ -337,7 +376,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Empty body" }, { status: 400 });
   }
 
-  if (!verifySignatureWithSDk(body, signature)) {
+  if (!verifySignatureWithSdk(body, signature)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 

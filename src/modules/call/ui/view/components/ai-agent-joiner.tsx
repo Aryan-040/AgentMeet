@@ -50,19 +50,15 @@ export const AIAgentJoiner = ({
                     attempt: connectionAttempts + 1
                 });
 
-                // Call the webhook endpoint to trigger AI agent connection
-                const response = await fetch("/api/webhook", {
+                // Call the connect-ai-agent endpoint to trigger AI agent connection
+                const response = await fetch("/api/connect-ai-agent", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        type: "call.session_started",
-                        call: {
-                            custom: { meetingId },
-                            cid: `default:${meetingId}`
-                        },
-                        call_cid: `default:${meetingId}`
+                        meetingId,
+                        agentId,
                     }),
                 });
 
@@ -137,7 +133,7 @@ export const AIAgentJoiner = ({
                 clearInterval(connectionCheckIntervalRef.current);
             }
         };
-    }, [isAgentConnected, call]);
+    }, []);
 
     if (callingState !== CallingState.JOINED || isAgentConnected) {
         return null;
