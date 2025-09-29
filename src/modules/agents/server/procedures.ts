@@ -150,4 +150,15 @@ export const agentsRouter = createTRPCRouter({
         throw new Error("Failed to create agent. Please try again.");
       }
     }),
+  getTotalCount: protectedProcedure
+    .query(async ({ ctx }) => {
+      const [result] = await db
+        .select({
+          count: count(agents.id),
+        })
+        .from(agents)
+        .where(eq(agents.userId, ctx.auth.user.id));
+
+      return result.count;
+    }),
 });

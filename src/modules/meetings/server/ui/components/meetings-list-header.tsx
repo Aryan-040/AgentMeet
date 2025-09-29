@@ -32,10 +32,10 @@ export const MeetingsListHeader = () => {
   return (
     <>
       <NewMeetingDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
-      <div className="sticky top-0 z-20 border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+      <div className="sticky top-0 z-20 border-b border-slate-700/50 bg-slate-800/80 backdrop-blur supports-[backdrop-filter]:bg-slate-800/60">
         <div className="flex items-center justify-between px-4 py-3 md:px-8">
-          <h1 className="text-2xl font-semibold tracking-tight">My Meetings</h1>
-          <Button onClick={() => setIsDialogOpen(true)} className="gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight text-white">My Meetings</h1>
+          <Button onClick={() => setIsDialogOpen(true)} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
             <PlusIcon className="size-4" />
             New Meeting
           </Button>
@@ -46,7 +46,7 @@ export const MeetingsListHeader = () => {
             <StatusFilter />
             <AgentIdFilter />
             {isAnyFilterModified && (
-              <Button variant="outline" onClick={onClearFilters} className="gap-2">
+              <Button variant="outline" onClick={onClearFilters} className="gap-2 border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white">
                 <XCircleIcon className="size-4" />
                 Clear
               </Button>

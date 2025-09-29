@@ -25,16 +25,16 @@ export const AgentsView = () => {
 
 
     return (
-        <div className="flex-1 px-4 pb-6 md:px-8">
-            <div className="rounded-xl border bg-white shadow-sm">
-                <div className="p-2 md:p-4">
+        <div className="flex-1 h-full">
+            <div className="glass-dark">
+                <div className="p-6">
                     <DataTable
                         data={data.items}
                         columns={columns}
                         onRowClick={(row) => router.push(`/agents/${row.id}`)}
                     />
                 </div>
-                <div className="border-t p-3 md:p-4">
+                <div className="border-t border-slate-700/30 p-4">
                     <DataPagination
                         page={filters.page}
                         totalPages={data.totalPages}

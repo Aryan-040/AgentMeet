@@ -32,8 +32,8 @@ export function DataTable<TData, TValue>({
   })
 
   return (
-    <div className="rounded-lg border bg-background overflow-hidden">
-      <Table>
+    <div className="rounded-lg border border-slate-700/50 bg-slate-800/50 overflow-hidden">
+      <Table className="text-slate-200">
        
         <TableBody>
           {table.getRowModel().rows?.length ? (
@@ -53,7 +53,7 @@ export function DataTable<TData, TValue>({
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={columns.length} className="h-19 text-center text-muted-foreground">
+              <TableCell colSpan={columns.length} className="h-19 text-center text-slate-400">
                 No results.
               </TableCell>
             </TableRow>
