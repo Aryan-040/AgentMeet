@@ -1,18 +1,7 @@
-// "use client";
 
-
-// export const HomeView = () => {
-  
-//   return (
-//   <div >
-//     Home View 
-//   </div>
-//   )
-// };
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Video, PlusCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
