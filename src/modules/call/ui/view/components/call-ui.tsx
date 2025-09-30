@@ -49,6 +49,16 @@ export const CallUI = ({ meetingId, meetingName, agent}: Props) => {
         try {
             // End the call so the backend receives call.session_ended immediately
             await call.endCall();
+            // Best-effort fallback: mark meeting as ended to move status to processing
+            try {
+                await fetch("/api/meetings/mark-ended", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ meetingId }),
+                });
+            } catch {
+                // ignore; webhook should still process
+            }
         } catch (error) {
             console.error("Failed to leave call", error);
         } finally {
