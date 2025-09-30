@@ -151,13 +151,19 @@ export async function POST(req: NextRequest) {
           meetingId,
           agentId: existingAgent.id,
         });
-        realtimeClient.updateSession({
-          instructions: existingAgent.instructions,
-        });
-        console.log("[webhook] AI session updated with instructions", {
-          meetingId,
-          agentId: existingAgent.id,
-        });
+        if (existingAgent.instructions) {
+          try {
+            await realtimeClient.updateSession({
+              instructions: existingAgent.instructions,
+            });
+            console.log("[webhook] AI session updated with instructions", {
+              meetingId,
+              agentId: existingAgent.id,
+            });
+          } catch (e) {
+            console.warn("[webhook] updateSession failed; continuing without instructions", e);
+          }
+        }
       } catch (error) {
         console.error("[webhook] Failed to connect AI agent", error);
       }

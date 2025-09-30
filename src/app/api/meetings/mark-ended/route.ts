@@ -25,14 +25,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
     }
 
-    // Ensure chat channel exists so "Ask AI" works even without session_ended webhook
     try {
       const channel = streamChat.channel("messaging", meetingId);
       await channel.create();
       await channel.addMembers([updated.userId]);
     } catch {}
 
-    // Kick off processing even if transcript isn't ready; the function will mark completed or fallback
     try {
       await inngest.send({
         name: "meetings/processing",

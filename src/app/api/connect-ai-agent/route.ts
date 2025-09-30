@@ -192,13 +192,17 @@ export async function POST(req: NextRequest) {
       });
 
       if (existingAgent.instructions) {
-        realtimeClient.updateSession({
-          instructions: existingAgent.instructions,
-        });
-        console.log("[connect-ai-agent] AI session updated with instructions", {
-          meetingId,
-          agentId: existingAgent.id,
-        });
+        try {
+          await realtimeClient.updateSession({
+            instructions: existingAgent.instructions,
+          });
+          console.log("[connect-ai-agent] AI session updated with instructions", {
+            meetingId,
+            agentId: existingAgent.id,
+          });
+        } catch (e) {
+          console.warn("[connect-ai-agent] updateSession failed; continuing without instructions", e);
+        }
       }
     } catch (streamError) {
       console.error("[connect-ai-agent] Stream Video connection failed", streamError);
