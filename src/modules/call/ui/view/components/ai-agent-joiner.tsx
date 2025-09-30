@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useCall, useCallStateHooks, CallingState } from "@stream-io/video-react-sdk";
 
 interface Props {
@@ -10,36 +10,57 @@ interface Props {
     agentInstructions: string;
 }
 
-export const AIAgentJoiner = ({ agentId }: Props) => {
+export const AIAgentJoiner = ({ meetingId, agentId }: Props) => {
     const call = useCall();
     const { useCallCallingState, useParticipants } = useCallStateHooks();
     const callingState = useCallCallingState();
     const participants = useParticipants();
     
-    // Local state no longer needed; presence is driven by server webhook
-    
+    // Prevent duplicate client-side triggers
+    const connectAttemptedRef = useRef(false);
 
     const isAgentInCall = participants.some(p => p.userId === agentId);
 
+    // Guarded client-side connect: trigger once when user joins and agent not present
     useEffect(() => {
         if (callingState !== CallingState.JOINED || !call) {
             return;
         }
-
         if (isAgentInCall) {
-        // Presence acknowledged
+            return;
+        }
+        if (connectAttemptedRef.current) {
+            return;
         }
 
-        return () => {};
-    }, [callingState, call, isAgentInCall]);
+        connectAttemptedRef.current = true;
+        const controller = new AbortController();
+        void (async () => {
+            try {
+                await fetch("/api/connect-ai-agent", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ meetingId, agentId }),
+                    signal: controller.signal,
+                });
+            } catch {
+                // allow one retry after brief delay
+                setTimeout(() => { connectAttemptedRef.current = false; }, 3000);
+            }
+        })();
 
+        return () => {
+            controller.abort();
+        };
+    }, [callingState, call, isAgentInCall, meetingId, agentId]);
+
+    // Keep effect to re-run when participants change (no-op, used to detect presence)
     useEffect(() => {
         if (callingState !== CallingState.JOINED || !call) {
             return;
         }
-
-        // Keep effect to re-run when participants change
-    }, [callingState, participants, agentId, call]);
+        void participants;
+    }, [callingState, participants, call]);
 
     
     useEffect(() => {}, []);
