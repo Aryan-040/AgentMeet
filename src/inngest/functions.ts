@@ -178,13 +178,58 @@ export const meetingsProcessing = inngest.createFunction(
     try {
       console.log("[meetingsProcessing] Starting processing for meeting:", event.data.meetingId);
 
-      const transcriptText = await step.run("fetch-transcript", async () => {
-        console.log("[meetingsProcessing] Fetching transcript from:", event.data.transcriptUrl);
-        const response = await fetch(event.data.transcriptUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch transcript: ${response.status} ${response.statusText}`);
+      
+      const transcriptUrl = await step.run("wait-for-transcript-url", async (): Promise<string | undefined> => {
+        
+        const raw = (event.data as { transcriptUrl?: string | null }).transcriptUrl;
+        const url: string | undefined = raw != null && typeof raw === "string" && raw.length > 0 ? raw : undefined;
+        if (url) {
+          return url;
         }
-        return response.text();
+
+        // Poll DB for up to ~90s (6 attempts with backoff) for transcript URL to be populated by webhook
+        const maxAttempts = 6;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          const [meeting] = await db
+            .select()
+            .from(meetings)
+            .where(eq(meetings.id, event.data.meetingId));
+          const dbUrl = meeting?.transcriptUrl ?? undefined; 
+          if (typeof dbUrl === "string" && dbUrl.length > 0) {
+            return dbUrl;
+          }
+          const delayMs = attempt * 15000; // 15s, 30s, 45s, ...
+          console.log(`[meetingsProcessing] Transcript URL not ready (attempt ${attempt}/${maxAttempts}). Waiting ${delayMs}ms`);
+          await new Promise((res) => setTimeout(res, delayMs));
+        }
+        return undefined;
+      });
+
+      // 2) Try to fetch transcript text with retries; if unavailable, continue with fallback summary
+      const transcriptText = await step.run("fetch-transcript", async () => {
+        if (!transcriptUrl) {
+          console.warn("[meetingsProcessing] No transcript URL available after waiting. Proceeding with fallback summary.");
+          return "[]"; 
+        }
+        const maxAttempts = 3;
+        let lastErr: unknown;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          try {
+            console.log(`[meetingsProcessing] Fetching transcript (attempt ${attempt}/${maxAttempts}) from:`, transcriptUrl);
+            const response = await fetch(transcriptUrl);
+            if (!response.ok) {
+              throw new Error(`Failed to fetch transcript: ${response.status} ${response.statusText}`);
+            }
+            return await response.text();
+          } catch (err) {
+            lastErr = err;
+            const backoff = attempt * 5000;
+            console.warn(`[meetingsProcessing] Transcript fetch failed (attempt ${attempt}). Retrying in ${backoff}ms`);
+            await new Promise((res) => setTimeout(res, backoff));
+          }
+        }
+        console.error("[meetingsProcessing] All transcript fetch attempts failed", lastErr);
+        return "[]"; // proceed with empty transcript -> fallback summary
       });
 
       const transcript = (await step.run("parse-transcript", async () => {
