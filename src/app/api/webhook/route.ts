@@ -26,6 +26,7 @@ const MESSAGE_PROCESSING_TIMEOUT = 30000; // 30 seconds to prevent memory leaks
 // Disable body parsing for webhook signature verification
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const preferredRegion = 'auto';
 
 const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 

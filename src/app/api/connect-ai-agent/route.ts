@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 import { streamVideo } from "@/lib/stream-video";
 import { db } from "@/db";
 import { agents, meetings } from "@/db/schema";

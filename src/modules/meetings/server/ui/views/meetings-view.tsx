@@ -19,14 +19,16 @@ export const MeetingsView = () => {
         ...trpc.meetings.getMany.queryOptions({
             ...filters,
         }),
-        // Enable polling if there are any processing meetings
+        // Poll to reflect processing -> completed transitions quickly
         refetchInterval: (query) => {
-            // Only poll if there are meetings in processing state
-            const hasProcessingMeetings = query.state.data?.items?.some(meeting => meeting.status === "processing");
-            return hasProcessingMeetings ? 5000 : false; // Poll every 5 seconds
+            const items = query.state.data?.items ?? [];
+            const hasActiveOrProcessing = items.some(m => m.status === "processing" || m.status === "active");
+            return hasActiveOrProcessing ? 4000 : false;
         },
         // Stop polling when tab is not active
         refetchIntervalInBackground: false,
+        // Ensure query refetches on window focus to catch final completion
+        refetchOnWindowFocus: true,
     });
 
     return (

@@ -1,4 +1,6 @@
 import { serve } from "inngest/next";
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 import { inngest } from "@/inngest/client";
 import { meetingsProcessing } from "@/inngest/functions";
 
