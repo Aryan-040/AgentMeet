@@ -154,6 +154,16 @@ export async function POST(req: NextRequest) {
           meetingId,
           agentId: existingAgent.id,
         });
+        // Ensure agent user exists in Stream Chat so post-meeting chat can work
+        try {
+          await streamChat.upsertUser({
+            id: existingAgent.id,
+            name: existingAgent.name,
+            image: generateAvatarUri({ seed: existingAgent.name, variant: "botttsNeutral" }),
+          });
+        } catch (e) {
+          console.warn("[webhook] Failed to upsert agent in Stream Chat", e);
+        }
         if (existingAgent.instructions) {
           try {
             await realtimeClient.updateSession({
@@ -352,7 +362,22 @@ export async function POST(req: NextRequest) {
           `;
 
           const channel = streamChat.channel("messaging", channelId);
-          await channel.watch();
+          try {
+            await channel.watch();
+          } catch (e) {
+            console.warn("[webhook] Channel watch failed; attempting to create channel", e);
+            try {
+              await channel.create();
+              // Add both the user and agent if available
+              const members = [userId];
+              if (existingAgent.id) members.push(existingAgent.id);
+              await channel.addMembers(members);
+              await channel.watch();
+            } catch (e2) {
+              console.error("[webhook] Failed to create/watch chat channel", e2);
+              return NextResponse.json({ error: "Failed to initialize chat channel" }, { status: 500 });
+            }
+          }
 
           const previousMessages = channel.state.messages
             .slice(-5)
