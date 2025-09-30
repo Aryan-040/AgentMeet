@@ -51,15 +51,9 @@ export async function POST(req: NextRequest) {
 
   const body = await req.text();
 
-  const skipVerify = process.env.STREAM_WEBHOOK_SKIP_VERIFY === "true";
-
-  if (!skipVerify) {
-    if (!signature) {
-      return NextResponse.json({ error: "Missing signature" }, { status: 400 });
-    }
-    if (!verifySignatureWithSdk(body, signature)) {
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
-    }
+  
+  if (signature && !verifySignatureWithSdk(body, signature)) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
   let payload: unknown;
