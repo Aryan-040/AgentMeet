@@ -177,21 +177,21 @@ export const meetingsProcessing = inngest.createFunction(
   async ({ event, step }) => {
     try {
       console.log("[meetingsProcessing] Starting processing for meeting:", event.data.meetingId);
-      // Try to acquire a transcript URL quickly (<= ~15s)
+      // Try to acquire a transcript URL, allow more time in production where webhooks can lag (<= ~60s)
       const transcriptUrl = await step.run("get-transcript-url", async (): Promise<string | undefined> => {
         const fromEvent = (event.data as { transcriptUrl?: string | null }).transcriptUrl;
         if (typeof fromEvent === "string" && fromEvent.length > 0) return fromEvent;
-        for (let attempt = 1; attempt <= 3; attempt++) {
+        for (let attempt = 1; attempt <= 6; attempt++) {
           const [m] = await db.select().from(meetings).where(eq(meetings.id, event.data.meetingId));
           if (m?.transcriptUrl && m.transcriptUrl.length > 0) return m.transcriptUrl;
-          const waitMs = 5000; // 5s x 3 = 15s max
+          const waitMs = 10000; // 10s x 6 = 60s max
           console.log(`[meetingsProcessing] Waiting ${waitMs}ms for transcript URL (attempt ${attempt}/3)`);
           await new Promise((r) => setTimeout(r, waitMs));
         }
         return undefined;
       });
 
-      const transcriptText = await step.run("fetch-transcript", async () => {
+      let transcriptText = await step.run("fetch-transcript", async () => {
         try {
           if (!transcriptUrl) {
             console.warn("[meetingsProcessing] No transcript URL available within 15s window; using fallback.");
@@ -209,7 +209,7 @@ export const meetingsProcessing = inngest.createFunction(
         }
       });
 
-      const transcript = (await step.run("parse-transcript", async () => {
+      let transcript = (await step.run("parse-transcript", async () => {
         console.log("[meetingsProcessing] Parsing transcript JSONL");
         try {
           const trimmed = (transcriptText ?? "").trim();
@@ -222,6 +222,32 @@ export const meetingsProcessing = inngest.createFunction(
           return [] as StreamTranscriptItem[];
         }
       })) as unknown as StreamTranscriptItem[];
+
+      // If transcript is still empty, retry a few times to allow Stream webhook to deliver content
+      if (!transcript || transcript.length === 0) {
+        const maxRetries = 5;
+        const waitMs = 10000; // 10s between retries
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          console.log(`[meetingsProcessing] Transcript empty; retry ${attempt}/${maxRetries} after ${waitMs}ms`);
+          await new Promise((r) => setTimeout(r, waitMs));
+          // Refresh URL in case it was just written
+          const [m] = await db.select().from(meetings).where(eq(meetings.id, event.data.meetingId));
+          const urlToUse = m?.transcriptUrl ?? transcriptUrl;
+          if (!urlToUse) continue;
+          try {
+            const resp = await fetch(urlToUse);
+            if (!resp.ok) throw new Error(`Fetch failed: ${resp.status} ${resp.statusText}`);
+            transcriptText = await resp.text();
+            const parsed = JSONL.parse<StreamTranscriptItem>(transcriptText);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              transcript = parsed as unknown as StreamTranscriptItem[];
+              break;
+            }
+          } catch (e) {
+            console.warn("[meetingsProcessing] Retry fetch/parse failed", e);
+          }
+        }
+      }
 
       const transcriptWithSpeakers = await step.run("add-speakers", async () => {
         console.log("[meetingsProcessing] Adding speaker information");
