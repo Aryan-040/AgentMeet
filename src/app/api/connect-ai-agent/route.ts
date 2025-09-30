@@ -127,7 +127,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Connect the AI agent to the call
     const call = streamVideo.video.call("default", meetingId);
     console.log("[connect-ai-agent] Connecting AI agent to call", {
       meetingId,
@@ -140,11 +139,34 @@ export async function POST(req: NextRequest) {
         await call.get();
         console.log("[connect-ai-agent] Call exists", { meetingId });
       } catch (callError) {
-        console.error("[connect-ai-agent] Call does not exist or is not accessible", callError);
-        return NextResponse.json(
-          { error: "Meeting call not found or not accessible", details: "The Stream Video call for this meeting does not exist or is not accessible" },
-          { status: 404 }
-        );
+        console.warn("[connect-ai-agent] Call missing. Attempting to create call on the fly.", callError);
+        try {
+          await call.create({
+            data: {
+              created_by_id: existingMeeting.userId,
+              custom: { meetingId },
+            },
+          });
+          console.log("[connect-ai-agent] Call created", { meetingId });
+        } catch (createErr) {
+          console.error("[connect-ai-agent] Failed to create missing call", createErr);
+          return NextResponse.json(
+            { error: "Meeting call not found or not accessible", details: "The Stream Video call could not be found or created" },
+            { status: 404 }
+          );
+        }
+      }
+
+      try {
+        await streamVideo.upsertUsers([
+          {
+            id: existingAgent.id,
+            name: existingAgent.name,
+            role: "user",
+          },
+        ]);
+      } catch (upsertErr) {
+        console.warn("[connect-ai-agent] Upsert agent user failed", upsertErr);
       }
 
       const realtimeClient = await streamVideo.video.connectOpenAi({
