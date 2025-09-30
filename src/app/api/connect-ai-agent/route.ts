@@ -82,20 +82,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // If this agent is already connected, return success
-    if (existingMeeting.agentId === agentId) {
-      console.log("[connect-ai-agent] This AI agent is already connected to the meeting", { 
-        meetingId, 
-        agentId 
-      });
-      return NextResponse.json({
-        success: true,
-        message: "AI agent is already connected",
-        alreadyConnected: true
-      });
-    }
-
-    // Update meeting status to active if it's upcoming
     if (existingMeeting.status === "upcoming") {
       await db
         .update(meetings)
