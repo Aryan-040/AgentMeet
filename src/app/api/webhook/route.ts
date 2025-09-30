@@ -242,11 +242,25 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
       }
 
+      // Try to fetch transcript content proactively for environments where the URL may not be publicly accessible
+      let transcriptText: string | undefined;
+      try {
+        const resp = await fetch(event.call_transcription.url);
+        if (resp.ok) {
+          transcriptText = await resp.text();
+        } else {
+          console.warn("[webhook] Failed to prefetch transcript content", resp.status, resp.statusText);
+        }
+      } catch (e) {
+        console.warn("[webhook] Error prefetching transcript content", e);
+      }
+
       await inngest.send({
         name: "meetings/processing",
         data: {
           meetingId: updatedMeeting.id,
           transcriptUrl: updatedMeeting.transcriptUrl,
+          transcriptText,
         }
       })
     } else if (eventType === "call.recording_ready") {

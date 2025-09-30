@@ -193,6 +193,13 @@ export const meetingsProcessing = inngest.createFunction(
 
       const transcriptText = await step.run("fetch-transcript", async () => {
         try {
+          // If transcript text was provided directly by the emitter, prefer it
+          const providedText = (event.data as { transcriptText?: string | null }).transcriptText;
+          if (typeof providedText === "string" && providedText.trim().length > 0) {
+            console.log("[meetingsProcessing] Using inlined transcript text from event");
+            return providedText;
+          }
+
           if (!transcriptUrl) {
             console.warn("[meetingsProcessing] No transcript URL available within 15s window; using fallback.");
             return "[]";
