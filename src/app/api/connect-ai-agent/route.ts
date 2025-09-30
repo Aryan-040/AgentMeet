@@ -6,6 +6,12 @@ import { db } from "@/db";
 import { agents, meetings } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 
+// Declare a typed lock map on the global object to avoid duplicate concurrent connections
+declare global {
+  // eslint-disable-next-line no-var
+  var __agentConnectingLocks: Map<string, number> | undefined;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -39,10 +45,10 @@ export async function POST(req: NextRequest) {
     });
 
     const now = Date.now();
-    
-    const locks: Map<string, number> = (globalThis as any).__agentConnectingLocks || new Map();
-    
-    (globalThis as any).__agentConnectingLocks = locks;
+
+    const locks: Map<string, number> = globalThis.__agentConnectingLocks || new Map<string, number>();
+
+    globalThis.__agentConnectingLocks = locks;
     const existingLock = locks.get(meetingId);
     if (existingLock && now - existingLock < 15000) {
       return NextResponse.json({ success: false, message: "Agent connection in progress" }, { status: 202 });
@@ -214,8 +220,7 @@ export async function POST(req: NextRequest) {
       );
     } finally {
       // Release lock
-      // @ts-ignore
-      const l: Map<string, number> = (globalThis as any).__agentConnectingLocks;
+      const l: Map<string, number> | undefined = globalThis.__agentConnectingLocks;
       l?.delete(meetingId);
     }
 
