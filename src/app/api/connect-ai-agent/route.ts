@@ -38,7 +38,17 @@ export async function POST(req: NextRequest) {
       agentId,
     });
 
-    // Verify the meeting and agent exist
+    const now = Date.now();
+    
+    const locks: Map<string, number> = (globalThis as any).__agentConnectingLocks || new Map();
+    
+    (globalThis as any).__agentConnectingLocks = locks;
+    const existingLock = locks.get(meetingId);
+    if (existingLock && now - existingLock < 15000) {
+      return NextResponse.json({ success: false, message: "Agent connection in progress" }, { status: 202 });
+    }
+    locks.set(meetingId, now);
+
     console.log("[connect-ai-agent] Looking up meeting", { meetingId });
     const [existingMeeting] = await db
       .select()
@@ -57,7 +67,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if meeting is in a valid state for connecting AI agent
     if (existingMeeting.status === "completed" || existingMeeting.status === "cancelled") {
       console.log("[connect-ai-agent] Meeting is already completed or cancelled", { 
         meetingId, 
@@ -203,6 +212,11 @@ export async function POST(req: NextRequest) {
         { error: userMessage, details: errorMessage },
         { status: 500 }
       );
+    } finally {
+      // Release lock
+      // @ts-ignore
+      const l: Map<string, number> = (globalThis as any).__agentConnectingLocks;
+      l?.delete(meetingId);
     }
 
     return NextResponse.json({
