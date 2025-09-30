@@ -198,10 +198,9 @@ export async function POST(req: NextRequest) {
 
         try {
           await inngest.send({
-            name: "meetings/transcribe",
+            name: "meetings/processing",
             data: {
               meetingId: updatedMeeting.id,
-              callCid: event.call_cid,
             },
           });
         } catch (err) {
