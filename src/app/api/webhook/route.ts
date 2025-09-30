@@ -48,12 +48,15 @@ function verifySignatureWithSdk(body: string, signature: string): boolean {
 
 export async function POST(req: NextRequest) {
   const signature = req.headers.get("x-signature");
-
   const body = await req.text();
 
-  
-  if (signature && !verifySignatureWithSdk(body, signature)) {
-    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  const skipVerify = process.env.STREAM_WEBHOOK_SKIP_VERIFY === 'true';
+  if (!skipVerify) {
+    if (signature && !verifySignatureWithSdk(body, signature)) {
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    }
+  } else {
+    console.warn("[webhook] Skipping signature verification due to STREAM_WEBHOOK_SKIP_VERIFY=true");
   }
 
   let payload: unknown;
@@ -220,6 +223,12 @@ export async function POST(req: NextRequest) {
       if (!meetingId) {
         return NextResponse.json({ error: "Missing meetingId" }, { status: 400 });
       }
+
+      console.log("[webhook] call.transcription_ready received", {
+        meetingId,
+        url: event.call_transcription?.url,
+        callCid: (payload as CallTranscriptionReadyEvent).call_cid,
+      });
 
       const [updatedMeeting] = await db
         .update(meetings)
