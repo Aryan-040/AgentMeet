@@ -177,23 +177,49 @@ export const meetingsProcessing = inngest.createFunction(
   async ({ event, step }) => {
     try {
       console.log("[meetingsProcessing] Starting processing for meeting:", event.data.meetingId);
+      // Try to acquire a transcript URL quickly (<= ~15s)
+      const transcriptUrl = await step.run("get-transcript-url", async (): Promise<string | undefined> => {
+        const fromEvent = (event.data as { transcriptUrl?: string | null }).transcriptUrl;
+        if (typeof fromEvent === "string" && fromEvent.length > 0) return fromEvent;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          const [m] = await db.select().from(meetings).where(eq(meetings.id, event.data.meetingId));
+          if (m?.transcriptUrl && m.transcriptUrl.length > 0) return m.transcriptUrl;
+          const waitMs = 5000; // 5s x 3 = 15s max
+          console.log(`[meetingsProcessing] Waiting ${waitMs}ms for transcript URL (attempt ${attempt}/3)`);
+          await new Promise((r) => setTimeout(r, waitMs));
+        }
+        return undefined;
+      });
 
       const transcriptText = await step.run("fetch-transcript", async () => {
-        console.log("[meetingsProcessing] Fetching transcript from:", event.data.transcriptUrl);
-        const response = await fetch(event.data.transcriptUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch transcript: ${response.status} ${response.statusText}`);
+        try {
+          if (!transcriptUrl) {
+            console.warn("[meetingsProcessing] No transcript URL available within 15s window; using fallback.");
+            return "[]";
+          }
+          console.log("[meetingsProcessing] Fetching transcript from:", transcriptUrl);
+          const response = await fetch(transcriptUrl);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch transcript: ${response.status} ${response.statusText}`);
+          }
+          return response.text();
+        } catch (err) {
+          console.warn("[meetingsProcessing] Transcript unavailable, proceeding with empty transcript", err);
+          return "[]";
         }
-        return response.text();
       });
 
       const transcript = (await step.run("parse-transcript", async () => {
         console.log("[meetingsProcessing] Parsing transcript JSONL");
         try {
-          return JSONL.parse(transcriptText);
+          const trimmed = (transcriptText ?? "").trim();
+          if (trimmed.length === 0 || trimmed === "[]") {
+            return [] as StreamTranscriptItem[];
+          }
+          return JSONL.parse<StreamTranscriptItem>(transcriptText);
         } catch (error) {
-          console.error("[meetingsProcessing] Failed to parse transcript:", error);
-          throw new Error(`Failed to parse transcript: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          console.warn("[meetingsProcessing] Failed to parse transcript, using empty fallback", error);
+          return [] as StreamTranscriptItem[];
         }
       })) as unknown as StreamTranscriptItem[];
 
